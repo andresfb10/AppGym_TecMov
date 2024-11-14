@@ -22,147 +22,152 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.ui.graphics.Color
 
 
-@OptIn(ExperimentalMaterial3Api::class)  // Opt-in para usar API experimental de Material3
+@OptIn(ExperimentalMaterial3Api::class) // Utiliza una API experimental de Jetpack Compose para Material3
 @Composable
 fun HomeScreen(
-    navController: NavController,  // Controlador de navegación para movernos entre pantallas
-    onNavigateToProfile: () -> Unit,  // Función para navegar a la pantalla de perfil
-    onNavigateToTrackWorkout: (String) -> Unit  // Función para navegar a la pantalla de seguimiento de entrenamientos
+    navController: NavController, // Navegación entre pantallas
+    onNavigateToProfile: () -> Unit, // Acción para navegar al perfil
+    onNavigateToTrackWorkout: (String) -> Unit // Acción para navegar al seguimiento de entrenamiento
 ) {
-    val scope = rememberCoroutineScope()  // Creación de un ámbito para lanzar corutinas
-    val auth = FirebaseAuth.getInstance()  // Obtener instancia de FirebaseAuth
-    val db = FirebaseFirestore.getInstance()  // Obtener instancia de FirebaseFirestore
+    val scope = rememberCoroutineScope() // Crea un alcance de corrutina para manejar tareas asincrónicas
+    val auth = FirebaseAuth.getInstance() // Instancia de Firebase Authentication
+    val db = FirebaseFirestore.getInstance() // Instancia de Firestore para acceder a la base de datos
 
-    // Definir variables de estado para gestionar la UI
-    var routines by remember { mutableStateOf<List<Routine>>(emptyList()) }  // Lista de rutinas
-    var isLoading by remember { mutableStateOf(false) }  // Estado de carga
-    var isDeleting by remember { mutableStateOf(false) }  // Estado para indicar si se está eliminando una rutina
-    var error by remember { mutableStateOf<String?>(null) }  // Estado de error
-    var searchQuery by remember { mutableStateOf("") }  // Consulta de búsqueda
+    // Estado para manejar la lista de rutinas, si está cargando, si está eliminando y si hay errores
+    var routines by remember { mutableStateOf<List<Routine>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var isDeleting by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
 
-    // Definir colores personalizados
-    val spotifyGreen = Color(0xFF1DB954)  // Verde de Spotify
-    val spotifyBlack = Color(0xFF191414)  // Negro de fondo de Spotify
-    val darkGray = Color(0xFF282828)  // Gris oscuro para algunos fondos
+    // Colores personalizados (para simular el esquema de colores de Spotify)
+    val spotifyGreen = Color(0xFF1DB954)
+    val spotifyBlack = Color(0xFF191414)
+    val darkGray = Color(0xFF282828)
 
-    // Cargar las rutinas desde Firebase
-    LaunchedEffect(Unit) {  // LaunchedEffect ejecuta el bloque una vez al inicio
-        isLoading = true  // Iniciar carga
+    // Este efecto se ejecuta al iniciarse la pantalla (LaunchedEffect con Unit significa que se ejecutará una sola vez)
+    LaunchedEffect(Unit) {
+        isLoading = true
         try {
-            val userId = auth.currentUser?.uid  // Obtener el ID del usuario actual
+            val userId = auth.currentUser?.uid // Obtiene el ID del usuario actual desde Firebase Authentication
             if (userId != null) {
-                // Realizar consulta en Firebase Firestore para obtener rutinas del usuario
+                // Realiza una consulta en Firestore para obtener las rutinas del usuario
                 db.collection("routines")
-                    .whereEqualTo("userId", userId)  // Filtrar rutinas por ID de usuario
-                    .addSnapshotListener { snapshot, e ->  // Escuchar cambios en tiempo real
+                    .whereEqualTo("userId", userId) // Filtra las rutinas por el ID del usuario
+                    .addSnapshotListener { snapshot, e -> // Escucha cambios en la base de datos
                         if (e != null) {
-                            error = e.message  // Si hay un error, mostrar mensaje
+                            error = e.message // Si hay error, lo muestra
                             return@addSnapshotListener
                         }
 
-                        // Mapeo de los documentos obtenidos a objetos de tipo Routine
+                        // Mapea los documentos de la base de datos a objetos de tipo Routine
                         routines = snapshot?.documents?.mapNotNull { doc ->
                             doc.toObject(Routine::class.java)
                         } ?: emptyList()
 
-                        isLoading = false  // Finalizar carga
+                        isLoading = false // Finaliza el estado de carga
                     }
             }
         } catch (e: Exception) {
-            error = e.message  // Si ocurre un error en la consulta, mostrar mensaje
+            error = e.message // Si ocurre una excepción, muestra el mensaje de error
             isLoading = false
         }
     }
 
+    // Layout principal de la pantalla
     Box(
         modifier = Modifier
-            .fillMaxSize()  // Asegura que el Box ocupe todo el espacio disponible
-            .background(spotifyBlack)  // Fondo negro de Spotify
+            .fillMaxSize()
+            .background(spotifyBlack) // Fondo de la pantalla con color negro de Spotify
     ) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            containerColor = Color.Transparent,  // Fondo transparente
-            topBar = {
+            containerColor = Color.Transparent, // El fondo de la caja del Scaffold es transparente
+            topBar = { // Barra superior
                 TopAppBar(
-                    title = { Text("My Routines", color = Color.White) },  // Título de la barra superior
-                    actions = {
+                    title = { Text("My Routines", color = Color.White) },
+                    actions = { // Botón para ir al perfil
                         IconButton(
-                            onClick = { navController.navigate("profile") }  // Navegar a la pantalla de perfil
+                            onClick = { navController.navigate("profile") }
                         ) {
-                            Icon(Icons.Default.Person, "Profile", tint = Color.White)  // Ícono de perfil
+                            Icon(Icons.Default.Person, "Profile", tint = Color.White)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = spotifyBlack,  // Fondo de la barra superior
-                        titleContentColor = Color.White,  // Color del título
-                        actionIconContentColor = Color.White  // Color de los íconos de acción
+                        containerColor = spotifyBlack, // Color del fondo de la barra
+                        titleContentColor = Color.White, // Color del título
+                        actionIconContentColor = Color.White // Color de los íconos de acción
                     )
                 )
             },
-            floatingActionButton = {
+            floatingActionButton = { // Botón flotante para crear una nueva rutina
                 FloatingActionButton(
-                    onClick = { navController.navigate("create_routine") },  // Navegar a la pantalla de crear rutina
+                    onClick = { navController.navigate("create_routine") },
                     modifier = Modifier
-                        .size(56.dp)  // Tamaño del botón flotante
-                        .background(spotifyGreen, CircleShape),  // Fondo verde en forma de círculo
-                    elevation = FloatingActionButtonDefaults.elevation(8.dp)  // Elevación del botón
+                        .size(56.dp)
+                        .background(spotifyGreen, CircleShape),
+                    elevation = FloatingActionButtonDefaults.elevation(8.dp)
                 ) {
                     Icon(
-                        Icons.Default.Add,  // Ícono de agregar
+                        Icons.Default.Add,
                         contentDescription = "Create Routine",
-                        tint = Color.White,  // Color blanco para el ícono
-                        modifier = Modifier.size(24.dp)  // Tamaño del ícono
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
-        ) { padding ->  // Content padding para la pantalla principal
+        ) { padding ->
+            // Contenedor principal de la pantalla
             Column(
                 modifier = Modifier
-                    .fillMaxSize()  // Asegura que el Column ocupe todo el espacio disponible
-                    .padding(padding)  // Agregar el padding proporcionado por Scaffold
+                    .fillMaxSize()
+                    .padding(padding)
             ) {
-                // Campo de búsqueda para filtrar rutinas
+                // Campo de búsqueda
                 OutlinedTextField(
-                    value = searchQuery,  // Valor del campo de búsqueda
-                    onValueChange = { searchQuery = it },  // Actualizar valor de búsqueda
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it }, // Cambia el valor de la búsqueda
                     modifier = Modifier
-                        .fillMaxWidth()  // Asegura que el campo de búsqueda ocupe todo el ancho
+                        .fillMaxWidth()
                         .padding(16.dp),
-                    placeholder = { Text("Search routines", color = Color.Gray) },  // Placeholder
-                    leadingIcon = { Icon(Icons.Default.Search, "Search", tint = Color.Gray) },  // Ícono de búsqueda
-                    singleLine = true,  // Campo de una sola línea
+                    placeholder = { Text("Search routines", color = Color.Gray) },
+                    leadingIcon = { Icon(Icons.Default.Search, "Search", tint = Color.Gray) },
+                    singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = spotifyGreen,  // Color del borde cuando está enfocado
-                        unfocusedBorderColor = Color.Gray,  // Color del borde cuando no está enfocado
-                        focusedTextColor = Color.White,  // Color del texto cuando está enfocado
-                        unfocusedTextColor = Color.Gray,  // Color del texto cuando no está enfocado
-                        cursorColor = spotifyGreen,  // Color del cursor
-                        focusedContainerColor = darkGray,  // Color del fondo cuando está enfocado
-                        unfocusedContainerColor = darkGray  // Color del fondo cuando no está enfocado
+                        focusedBorderColor = spotifyGreen, // Color del borde cuando está enfocado
+                        unfocusedBorderColor = Color.Gray, // Color del borde cuando no está enfocado
+                        focusedTextColor = Color.White, // Color del texto cuando está enfocado
+                        unfocusedTextColor = Color.Gray, // Color del texto cuando no está enfocado
+                        cursorColor = spotifyGreen, // Color del cursor
+                        focusedContainerColor = darkGray, // Color del fondo cuando está enfocado
+                        unfocusedContainerColor = darkGray // Color del fondo cuando no está enfocado
                     )
                 )
 
-                // Estado de carga global
+                // Muestra un indicador de carga si está cargando las rutinas
                 if (isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center  // Centramos el indicador de carga
-                    ) {
-                        CircularProgressIndicator(color = spotifyGreen)  // Indicador de carga
-                    }
-                } else if (routines.isEmpty()) {
-                    // Si no hay rutinas, mostrar mensaje
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("You don't have any routines yet", style = MaterialTheme.typography.bodyLarge, color = Color.White)
+                        CircularProgressIndicator(color = spotifyGreen)
+                    }
+                } else if (routines.isEmpty()) {
+                    // Si no tiene rutinas, muestra un mensaje informativo
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("You don't have any routines yet",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White)
                     }
                 } else {
-                    // Si hay rutinas, mostrarlas en una lista
+                    // Si ya tiene rutinas, muestra la lista de rutinas
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
@@ -170,44 +175,46 @@ fun HomeScreen(
                     ) {
                         items(
                             routines.filter {
-                                it.name.contains(searchQuery, ignoreCase = true)  // Filtrar por nombre según la búsqueda
+                                it.name.contains(searchQuery, ignoreCase = true) // Filtra las rutinas por la búsqueda
                             }
-                        ) { routine ->  // Para cada rutina, mostrar una tarjeta
+                        ) { routine ->
+                            // Muestra cada rutina en una tarjeta
                             RoutineCard(
                                 routine = routine,
                                 isDeleting = isDeleting,
                                 onDelete = {
-                                    isDeleting = true  // Cambiar estado a eliminando
-                                    scope.launch {
+                                    isDeleting = true
+                                    scope.launch { // Inicia una corrutina para eliminar la rutina
                                         try {
-                                            // Eliminar rutina de Firebase
                                             db.collection("routines")
                                                 .document(routine.id)
-                                                .delete()
-                                            isDeleting = false  // Finalizar eliminación
+                                                .delete() // Elimina la rutina de la base de datos
+                                            isDeleting = false
                                         } catch (e: Exception) {
-                                            error = e.message  // Si hay error, mostrar mensaje
+                                            error = e.message // Si hay error, muestra el mensaje
                                             isDeleting = false
                                         }
                                     }
                                 },
                                 onClick = {
-                                    // Navegar a la pantalla de seguimiento de entrenamiento pasando el ID de la rutina
-                                    navController.navigate("track_workout/${routine.id}")
+                                    navController.navigate("track_workout/${routine.id}") // Navega a la pantalla de seguimiento del entrenamiento
+                                },
+                                onViewDetails = {
+                                    navController.navigate("view_routine/${routine.id}") // Navega a la pantalla de detalles de la rutina
                                 }
                             )
                         }
                     }
                 }
 
-                // Mostrar mensajes de error si existen
+                // Si ocurre un error, muestra un Snackbar con el mensaje
                 if (error != null) {
                     Snackbar(
                         modifier = Modifier.padding(16.dp),
                         content = { Text(error ?: "Unknown error", color = Color.White) },
                         action = {
                             TextButton(
-                                onClick = { error = null },  // Cerrar el mensaje de error
+                                onClick = { error = null },
                                 colors = ButtonDefaults.textButtonColors(contentColor = spotifyGreen)
                             ) {
                                 Text("Close")
@@ -221,79 +228,83 @@ fun HomeScreen(
     }
 }
 
-// Componente para mostrar una tarjeta de rutina
+// Función composable para mostrar cada tarjeta de rutina
 @Composable
 private fun RoutineCard(
     routine: Routine,
     isDeleting: Boolean,
     onDelete: () -> Unit,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onViewDetails: () -> Unit
 ) {
     val spotifyGreen = Color(0xFF1DB954)
     val darkGray = Color(0xFF282828)
 
-    // Tarjeta que muestra la información de una rutina
+    // Card que contiene la información de la rutina
     Card(
         modifier = Modifier
-            .fillMaxWidth()  // Ocupa todo el ancho disponible
-            .clickable(onClick = onClick)  // Al hacer clic, ejecutar onClick
-            .padding(4.dp),  // Añadir padding
-        elevation = CardDefaults.cardElevation(8.dp),  // Elevación de la tarjeta
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(4.dp),
+        elevation = CardDefaults.cardElevation(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = darkGray,  // Fondo de la tarjeta
-            contentColor = Color.White  // Color del texto
+            containerColor = darkGray, // Fondo oscuro de la tarjeta
+            contentColor = Color.White // Color del texto dentro de la tarjeta
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)  // Padding dentro de la tarjeta
+            modifier = Modifier.padding(16.dp)
         ) {
-            // Fila que contiene el nombre de la rutina y la acción de eliminar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
-                    modifier = Modifier.weight(1f)  // El nombre y detalles de la rutina ocuparán el espacio restante
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = routine.name,
+                        text = routine.name, // Nombre de la rutina
                         style = MaterialTheme.typography.titleLarge,
                         color = Color.White
                     )
                     Text(
-                        text = "Training days: ${routine.daysOfWeek.size}",
+                        text = "Training days: ${routine.daysOfWeek.size}", // Muestra los días de entrenamiento
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray
                     )
                     Text(
-                        text = "Total exercises: ${routine.exercisesByDay.values.flatten().size}",
+                        text = "Total exercises: ${routine.exercisesByDay.values.sumBy { it.size }}", // Número total de ejercicios
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray
                     )
-                    if (routine.description.isNotEmpty()) {
-                        Text(
-                            text = routine.description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
-                        )
-                    }
                 }
 
-                // Ícono de eliminar
-                IconButton(
-                    onClick = onDelete,  // Al hacer clic, ejecutar onDelete
-                    enabled = !isDeleting  // Deshabilitar si se está eliminando
-                ) {
-                    if (isDeleting) {
-                        CircularProgressIndicator(  // Mostrar indicador de carga mientras se elimina
-                            modifier = Modifier.size(24.dp),
-                            color = spotifyGreen
+                // Icono de borrar si está cargando el estado de eliminación
+                if (isDeleting) {
+                    CircularProgressIndicator(color = spotifyGreen, modifier = Modifier.size(24.dp))
+                } else {
+                    IconButton(
+                        onClick = { onDelete() },
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(spotifyGreen, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Routine",
+                            tint = Color.White
                         )
-                    } else {
-                        Icon(Icons.Default.Delete, "Delete routine", tint = spotifyGreen)  // Mostrar ícono de eliminar
                     }
                 }
+            }
+
+            // Ver detalles
+            TextButton(
+                onClick = { onViewDetails() },
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text("View Details", color = spotifyGreen)
             }
         }
     }

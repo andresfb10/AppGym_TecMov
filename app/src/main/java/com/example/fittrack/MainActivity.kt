@@ -16,6 +16,7 @@ import com.example.fittrack.screens.CreateRoutineScreen
 import com.example.fittrack.screens.HomeScreen
 import com.example.fittrack.screens.ProfileScreen
 import com.example.fittrack.screens.TrackWorkoutScreen
+import com.example.fittrack.screens.ViewRoutineScreen
 import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
@@ -33,9 +34,9 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
     val navController = rememberNavController()
     val startDestination = if (FirebaseAuth.getInstance().currentUser != null) {
-        "home"  // Si el usuario ya está logueado, iniciar en "home"
+        "home"
     } else {
-        "login"  // Si no, iniciar en "login"
+        "login"
     }
 
     NavHost(
@@ -50,7 +51,7 @@ fun AppNavigation() {
                 },
                 onLoginSuccess = {
                     navController.navigate("home") {
-                        popUpTo("login") { inclusive = true }  // Elimina la pantalla de login
+                        popUpTo("login") { inclusive = true }
                     }
                 },
                 navController = navController
@@ -65,7 +66,7 @@ fun AppNavigation() {
                 },
                 onRegisterSuccess = {
                     navController.navigate("home") {
-                        popUpTo("login") { inclusive = true }  // Elimina la pantalla de login
+                        popUpTo("login") { inclusive = true }
                     }
                 },
                 navController = navController
@@ -78,11 +79,11 @@ fun AppNavigation() {
                 navController = navController,
                 onNavigateToProfile = {
                     navController.navigate("profile") {
-                        launchSingleTop = true  // Evita duplicar la navegación a profile si ya estás allí
+                        launchSingleTop = true
                     }
                 },
                 onNavigateToTrackWorkout = { routineId ->
-                    navController.navigate("track_workout/$routineId") // Navegar a TrackWorkoutScreen con el routineId
+                    navController.navigate("track_workout/$routineId")
                 }
             )
         }
@@ -92,7 +93,7 @@ fun AppNavigation() {
             ProfileScreen(
                 navController = navController,
                 onNavigateBack = {
-                    navController.navigateUp()  // Vuelve a la pantalla anterior
+                    navController.navigateUp()
                 },
                 onSignOut = {
                     FirebaseAuth.getInstance().signOut()
@@ -108,18 +109,38 @@ fun AppNavigation() {
             CreateRoutineScreen(navController = navController)
         }
 
-        // Pantalla para realizar el seguimiento del entrenamiento
+        // Nueva ruta - Visualización de rutina
+        composable(
+            route = "view_routine/{routineId}",
+            arguments = listOf(
+                navArgument("routineId") {
+                    type = NavType.StringType
+                    nullable = false
+                }
+            )
+        ) { backStackEntry ->
+            val routineId = backStackEntry.arguments?.getString("routineId")
+                ?: return@composable
+            ViewRoutineScreen(
+                navController = navController,
+                routineId = routineId
+            )
+        }
+
+        // Pantalla de seguimiento de entrenamiento
         composable(
             route = "track_workout/{routineId}",
-            arguments = listOf(navArgument("routineId") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("routineId") {
+                    type = NavType.StringType
+                }
+            )
         ) { backStackEntry ->
-            val routineId = backStackEntry.arguments?.getString("routineId")  // Obtiene el routineId
-            routineId?.let {
-                TrackWorkoutScreen(
-                    routineId = it,  // Pasa el routineId a TrackWorkoutScreen
-                    navController = navController
-                )
-            }
+            val routineId = backStackEntry.arguments?.getString("routineId") ?: ""
+            TrackWorkoutScreen(
+                routineId = routineId,
+                navController = navController
+            )
         }
     }
 }
